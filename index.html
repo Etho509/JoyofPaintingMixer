@@ -3,10 +3,11 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Girthycatboys Joy of Painting Canvas Color Mixer</title>
+  <title>GirthyCatboy’s Color Mixer for Joy of Painting</title>
   <style>
-    :root { --bg:#0b0f14; --panel:#121923; --muted:#8aa0b2; --text:#e7eef6; --acc:#4aa3ff; --ok:#35c759; --warn:#ff9f0a; }
-    *{box-sizing:border-box} body{margin:0;background:linear-gradient(180deg,#0b0f14,#0e141c 40%,#0b0f14);color:var(--text);font:16px/1.45 Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
+    :root { --bg:#0b0f14; --panel:#121923; --muted:#8aa0b2; --text:#e7eef6; --acc:#4aa3ff; }
+    *{box-sizing:border-box}
+    body{margin:0;background:linear-gradient(180deg,#0b0f14,#0e141c 40%,#0b0f14);color:var(--text);font:16px/1.45 Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
     .wrap{max-width:980px;margin:40px auto;padding:0 16px}
     .card{background:var(--panel);border:1px solid #1f2a36;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
     header{display:flex;gap:14px;align-items:center;margin-bottom:18px}
@@ -16,9 +17,7 @@
     .row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
     @media (max-width:800px){.row{grid-template-columns:1fr}}
     label{font-weight:600;font-size:14px}
-    input[type="text"],input[type="number"],button,select{
-      width:100%;padding:12px 14px;border-radius:12px;border:1px solid #223041;background:#0e1420;color:var(--text);
-    }
+    input[type="text"],input[type="number"],button,select{width:100%;padding:12px 14px;border-radius:12px;border:1px solid #223041;background:#0e1420;color:var(--text)}
     input[type="checkbox"]{transform:scale(1.1);vertical-align:middle}
     button{cursor:pointer;background:linear-gradient(180deg,#3e8cff,#2b6fe0);border:1px solid #2d6fdd;font-weight:700}
     button:disabled{opacity:.6;cursor:not-allowed}
@@ -40,15 +39,15 @@
         <header>
           <div class="swatch" id="targetSwatch" title="Target"></div>
           <div>
-            <h1>Girthycatboys Joy of Painting Canvas Color Mixer</h1>
-            <p class="sub">Input a hex color. App finds dye steps that approximate it using Minecraft's dye averaging (canvas base = white).</p>
+            <h1>GirthyCatboy’s Color Mixer for Joy of Painting</h1>
+            <p class="sub">Enter a hex color. The app finds dye steps that approximate it using Minecraft’s dye averaging on a <b>white canvas base</b>. Includes an optional IRL mode.</p>
           </div>
         </header>
 
         <div class="row">
           <div>
             <label for="hex">Target Hex</label>
-            <input id="hex" type="text" placeholder="#3AB3DA" value="#3AB3DA" />
+            <input id="hex" type="text" placeholder="#FFA195" value="#FFA195" />
           </div>
           <div>
             <label>&nbsp;</label>
@@ -83,14 +82,28 @@
           </div>
         </div>
 
-        <div class="row" style="margin-top:18px">
+        <div class="row" style="margin-top:12px">
+          <div>
+            <label>IRL Paint Mode</label>
+            <div class="stack">
+              <input id="irlMode" type="checkbox"> <span class="muted">Linear-light preview & target compensation</span>
+            </div>
+            <div class="stack" style="margin-top:8px">
+              <span class="muted">Compensate brightness</span>
+              <input id="comp" type="number" min="0.7" max="1.3" step="0.02" value="1.08" style="max-width:140px"/>
+              <span class="muted">(try 1.06–1.12)</span>
+            </div>
+          </div>
           <div class="stack">
-            <div class="swatch" id="matchSwatch" title="Match"></div>
+            <div class="swatch" id="matchSwatch" title="In‑game match"></div>
             <div>
-              <div>Match <code id="matchHex">#—</code> · ΔE <code id="matchDe">—</code></div>
+              <div>In‑game match <code id="matchHex">#—</code> · ΔE <code id="matchDe">—</code></div>
               <div class="muted">(Lower ΔE ≈ closer visual match)</div>
             </div>
           </div>
+        </div>
+
+        <div class="row" style="margin-top:10px">
           <div>
             <div>Recipe Summary</div>
             <div id="summary" class="muted">—</div>
@@ -99,7 +112,7 @@
 
         <div class="pane result" id="result" style="margin-top:10px"></div>
         <footer class="pane">
-          Uses the vanilla leather-dye averaging rule (applied to a <b>white canvas base</b>). Dye RGBs from the 1.12+ palette.
+          In‑game simulation uses Minecraft’s leather‑dye algorithm with brightness normalization (canvas base = white). IRL mode previews linear‑light mixing and lets you compensate the target so the in‑game result appears closer to real paint.
         </footer>
       </div>
     </div>
@@ -118,11 +131,12 @@ const BASE = [255,255,255]; // canvas base = white
 
 // ---------- Utilities ----------
 const clamp255 = v=> Math.max(0, Math.min(255, Math.round(v)));
+const floor255 = v=> Math.max(0, Math.min(255, Math.floor(v)));
 const rgbStr = rgb=> `#${rgb.map(x=>x.toString(16).toUpperCase().padStart(2,'0')).join('')}`;
 const parseHex = h=>{h=h.trim().replace(/^#/,''); if(h.length===3) h=[...h].map(ch=>ch+ch).join(''); if(h.length!==6) throw new Error('Use #RRGGBB'); return [0,2,4].map(i=>parseInt(h.slice(i,i+2),16)); };
 
-function srgbToLin(c){ c/=255; return (c<=0.04045)? c/12.92 : Math.pow((c+0.055)/1.055,2.4); }
-function linToSrgb(c){ return (c<=0.0031308)? 12.92*c : 1.055*Math.pow(c,1/2.4)-0.055; }
+function srgbToLin(c){ c/=255; return c<=0.04045? c/12.92 : Math.pow((c+0.055)/1.055,2.4); }
+function linToSrgb(c){ return c<=0.0031308? 12.92*c : 1.055*Math.pow(c,1/2.4)-0.055; }
 function rgbToLab([R,G,B]){
   const r=srgbToLin(R), g=srgbToLin(G), b=srgbToLin(B);
   const X=r*0.4124564 + g*0.3575761 + b*0.1804375;
@@ -136,23 +150,29 @@ function rgbToLab([R,G,B]){
 }
 function deltaE(rgb1,rgb2){ const [L1,a1,b1]=rgbToLab(rgb1), [L2,a2,b2]=rgbToLab(rgb2); return Math.hypot(L1-L2,a1-a2,b1-b2); }
 
-// Vanilla dye averaging (applies to canvas base here)
-function mixStep(current, dyeNames){
+// ---------- Mixing ----------
+// Exact vanilla-style step (brightness normalization + floor), executed on the game canvas
+function mixStepGame(current, dyeNames){
   const cols = [current, ...dyeNames.map(n=>DYES[n])];
   let r=0,g=0,b=0,maxSum=0;
-  for (const c of cols){ r+=c[0]; g+=c[1]; b+=c[2]; maxSum += Math.max(c[0],c[1],c[2]); }
+  for(const c of cols){ r+=c[0]; g+=c[1]; b+=c[2]; maxSum+=Math.max(c[0],c[1],c[2]); }
   const n = cols.length;
-  // average channels
-  r /= n; g /= n; b /= n;
-  // average of per-color max channel
-  const avgMax = maxSum / n;
-  // scale so max(r,g,b) matches avgMax (Minecraft’s step)
+  r /= n; g /= n; b /= n;                   // average channels (float)
+  const avgMax = maxSum / n;                // average of per-color maxima
   const maxRGB = Math.max(r,g,b) || 1;
-  const f = avgMax / maxRGB;
-  r = Math.round(Math.min(255, Math.max(0, r*f)));
-  g = Math.round(Math.min(255, Math.max(0, g*f)));
-  b = Math.round(Math.min(255, Math.max(0, b*f)));
+  const f = avgMax / maxRGB;                // normalization factor
+  // floor after scaling, clamp 0..255
+  r = floor255(r * f); g = floor255(g * f); b = floor255(b * f);
   return [r,g,b];
+}
+
+// Linear-light "IRL paint" preview of a step (no brightness normalization)
+function mixStepLinear(current, dyeNames){
+  const cols = [current, ...dyeNames.map(n=>DYES[n])];
+  let r=0,g=0,b=0; const n=cols.length;
+  for(const c of cols){ r+=srgbToLin(c[0]); g+=srgbToLin(c[1]); b+=srgbToLin(c[2]); }
+  r/=n; g/=n; b/=n;
+  return [r,g,b].map(x=> clamp255(linToSrgb(x)*255));
 }
 
 // ---------- Search ----------
@@ -167,7 +187,7 @@ function tryOneStep(target, maxDyes){
   let best=null;
   for(let k=1;k<=maxDyes;k++){
     for(const combo of combosWithReplacement(DYE_NAMES,k)){
-      const out=mixStep(BASE, combo);
+      const out=mixStepGame(BASE, combo);
       const d=deltaE(out, target);
       if(!best || d<best.d){ best={d, steps:[combo], out}; }
     }
@@ -179,10 +199,10 @@ function tryTwoSteps(target, maxPerStep){
   let best=null;
   for(let k1=1;k1<=maxPerStep;k1++){
     for(const s1 of combosWithReplacement(DYE_NAMES,k1)){
-      const mid=mixStep(BASE, s1);
+      const mid=mixStepGame(BASE, s1);
       for(let k2=1;k2<=maxPerStep;k2++){
         for(const s2 of combosWithReplacement(DYE_NAMES,k2)){
-          const out=mixStep(mid, s2);
+          const out=mixStepGame(mid, s2);
           const d=deltaE(out, target);
           if(!best || d<best.d){ best={d, steps:[s1,s2], out}; }
         }
@@ -199,17 +219,25 @@ function runSearch(){
   const enableTwo=document.getElementById('enableTwo').checked;
   const cutoffStr=document.getElementById('deltaCutoff').value;
   const cutoff = cutoffStr? parseFloat(cutoffStr) : null;
+  const irl = document.getElementById('irlMode').checked;
+  const comp = parseFloat(document.getElementById('comp').value || '1.0');
 
   let target; try{ target=parseHex(hex); }catch(e){ alert(e.message); return; }
 
   // Update target swatch
   document.getElementById('targetSwatch').style.background=rgbStr(target);
 
+  // If IRL mode, pre-compensate target brightness in linear space to better match real paint
+  if(irl){
+    let [R,G,B] = target.map(srgbToLin);
+    R = Math.min(1, R*comp); G = Math.min(1, G*comp); B = Math.min(1, B*comp);
+    target = [R,G,B].map(v=>clamp255(linToSrgb(v)*255));
+  }
+
   const cands=[ tryOneStep(target,d1) ];
   if(enableTwo) cands.push( tryTwoSteps(target,d2) );
   const best=cands.reduce((a,b)=> a && a.d<=b.d ? a : b);
 
-  // Apply cutoff
   if(cutoff!=null && best.d>cutoff){
     document.getElementById('matchSwatch').style.background='transparent';
     document.getElementById('matchHex').textContent = '#—';
@@ -219,6 +247,7 @@ function runSearch(){
     return;
   }
 
+  // Display overall match (in‑game)
   document.getElementById('matchSwatch').style.background=rgbStr(best.out);
   document.getElementById('matchHex').textContent=rgbStr(best.out);
   document.getElementById('matchDe').textContent=best.d.toFixed(2);
@@ -227,27 +256,29 @@ function runSearch(){
   const summary = best.steps.map((s,i)=>`Step ${i+1}: ${s.join(', ')}`).join(' → ');
   document.getElementById('summary').textContent = summary;
 
-  // Render steps
+  // Render steps with both previews (in‑game vs IRL)
   const result=document.getElementById('result');
   result.innerHTML='';
   let current=BASE;
   best.steps.forEach((dyes, idx)=>{
-    const next = mixStep(current, dyes);
+    const nextGame = mixStepGame(current, dyes);
+    const nextIRL  = mixStepLinear(current, dyes);
     const el=document.createElement('div');
     el.className='step';
     el.innerHTML = `
       <div style="display:flex;align-items:center;gap:12px;justify-content:space-between;flex-wrap:wrap">
         <div style="display:flex;align-items:center;gap:12px">
-          <div class="swatch" style="width:36px;height:36px;background:${rgbStr(next)}"></div>
+          <div class="swatch" style="width:36px;height:36px;background:${rgbStr(nextGame)}" title="In‑game"></div>
+          <div class="swatch" style="width:36px;height:36px;background:${rgbStr(nextIRL)}" title="IRL (linear)"></div>
           <div>
-            <div><b>Step ${idx+1}</b> → <code>${rgbStr(next)}</code></div>
+            <div><b>Step ${idx+1}</b> · In‑game <code>${rgbStr(nextGame)}</code> · IRL <code>${rgbStr(nextIRL)}</code></div>
             <div class="muted">Add: ${dyes.map(n=>`<span class='pill'>${n.replace('_',' ')}</span>`).join('')}</div>
           </div>
         </div>
         <div class="muted">from ${rgbStr(current)}</div>
       </div>`;
     result.appendChild(el);
-    current = next;
+    current = nextGame; // subsequent steps use game logic as Minecraft would
   });
 }
 
