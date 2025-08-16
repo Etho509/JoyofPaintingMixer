@@ -246,8 +246,8 @@ function runSearch(){
   if(snap){
     const s = nearestDye(target);
     if(s.dE <= snapTh){
-      const out = mixStepGame(BASE, [s.name]);
-      const best = { d: deltaE(out, target), out, steps:[[s.name]], snapped:true, snapName:s.name, snapDE:s.dE };
+      const out = s.rgb; // snap = use the default dye color directly (no mixing)
+      const best = { d: s.dE, out, steps:[], snapped:true, snapName:s.name, snapDE:s.dE };
       renderBest(best, cutoff);
       return;
     }
@@ -278,7 +278,7 @@ function renderBest(best, cutoff){
 
   document.getElementById('matchSwatch').style.background=rgbStr(best.out);
   document.getElementById('matchHex').textContent=rgbStr(best.out);
-  document.getElementById('matchDe').textContent=best.d.toFixed(2);
+  document.getElementById('matchDe').textContent=(best.d||0).toFixed(2);
 
   let summary = best.steps.map((s,i)=>`Step ${i+1}: ${s.join(', ')}`).join(' → ');
   if(best.snapped){ summary = `Snapped to default dye: ${best.snapName}`; }
@@ -286,6 +286,20 @@ function renderBest(best, cutoff){
 
   const result=document.getElementById('result');
   result.innerHTML='';
+  if(best.snapped){
+    const el=document.createElement('div');
+    el.className='step';
+    el.innerHTML = `
+      <div style="display:flex;align-items:center;gap:12px;justify-content:space-between;flex-wrap:wrap">
+        <div style=\"display:flex;align-items:center;gap:12px\"> 
+          <div class=\"swatch\" style=\"width:36px;height:36px;background:${rgbStr(best.out)}\" title=\"Default dye\"></div>
+          <div><b>Default dye</b>: ${best.snapName} · <code>${rgbStr(best.out)}</code></div>
+        </div>
+        <div class=\"muted\">no mixing needed</div>
+      </div>`;
+    result.appendChild(el);
+    return;
+  }
   let current=BASE;
   best.steps.forEach((dyes, idx)=>{
     const nextGame = mixStepGame(current, dyes);
