@@ -138,11 +138,21 @@ function deltaE(rgb1,rgb2){ const [L1,a1,b1]=rgbToLab(rgb1), [L2,a2,b2]=rgbToLab
 
 // Vanilla dye averaging (applies to canvas base here)
 function mixStep(current, dyeNames){
-  const colors=[current, ...dyeNames.map(n=>DYES[n])];
-  const r=colors.reduce((s,c)=>s+c[0],0)/colors.length;
-  const g=colors.reduce((s,c)=>s+c[1],0)/colors.length;
-  const b=colors.reduce((s,c)=>s+c[2],0)/colors.length;
-  return [clamp255(r), clamp255(g), clamp255(b)];
+  const cols = [current, ...dyeNames.map(n=>DYES[n])];
+  let r=0,g=0,b=0,maxSum=0;
+  for (const c of cols){ r+=c[0]; g+=c[1]; b+=c[2]; maxSum += Math.max(c[0],c[1],c[2]); }
+  const n = cols.length;
+  // average channels
+  r /= n; g /= n; b /= n;
+  // average of per-color max channel
+  const avgMax = maxSum / n;
+  // scale so max(r,g,b) matches avgMax (Minecraft’s step)
+  const maxRGB = Math.max(r,g,b) || 1;
+  const f = avgMax / maxRGB;
+  r = Math.round(Math.min(255, Math.max(0, r*f)));
+  g = Math.round(Math.min(255, Math.max(0, g*f)));
+  b = Math.round(Math.min(255, Math.max(0, b*f)));
+  return [r,g,b];
 }
 
 // ---------- Search ----------
