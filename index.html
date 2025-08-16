@@ -93,6 +93,11 @@
               <input id="comp" type="number" min="0.7" max="1.3" step="0.02" value="1.08" style="max-width:140px"/>
               <span class="muted">(try 1.06–1.12)</span>
             </div>
+            <div class="stack" style="margin-top:12px">
+              <input id="snapEnable" type="checkbox" checked>
+              <span class="muted">Snap to nearest default dye if ΔE ≤</span>
+              <input id="snapThreshold" type="number" min="0" step="0.1" value="2" style="max-width:100px"/>
+            </div>
           </div>
           <div class="stack">
             <div class="swatch" id="matchSwatch" title="In‑game match"></div>
@@ -121,22 +126,10 @@
 <script>
 // ---------- Data ----------
 const DYES = {
-  black:      [0x1D,0x1D,0x21], // #1D1D21
-  red:        [0xAE,0x2D,0x26], // #AE2D26
-  green:      [0x5D,0x7B,0x16], // #5D7B16
-  brown:      [0x81,0x53,0x31], // #815331
-  blue:       [0x3B,0x43,0xA8], // #3B43A8
-  purple:     [0x87,0x31,0xB6], // #8731B6
-  cyan:       [0x16,0x9A,0x9A], // #169A9A
-  light_gray: [0x9B,0x9B,0x95], // #9B9B95
-  gray:       [0x46,0x4E,0x51], // #464E51
-  pink:       [0xF0,0x89,0xA8], // #F089A8
-  lime:       [0x7E,0xC5,0x1F], // #7EC51F
-  yellow:     [0xFB,0xD5,0x3C], // #FBD53C
-  light_blue: [0x39,0xB1,0xD7], // #39B1D7
-  magenta:    [0xC5,0x4D,0xBB], // #C54DBB
-  orange:     [0xF6,0x7E,0x1D], // #F67E1D
-  white:      [0xFF,0xFF,0xFF], // #FFFFFF
+  black:[0x1D,0x1D,0x21], red:[0xB0,0x2E,0x26], green:[0x5E,0x7C,0x16], brown:[0x83,0x54,0x32],
+  blue:[0x3C,0x44,0xAA], purple:[0x89,0x32,0xB8], cyan:[0x16,0x9C,0x9C], light_gray:[0x9D,0x9D,0x97],
+  gray:[0x47,0x4F,0x52], pink:[0xF3,0x8B,0xAA], lime:[0x80,0xC7,0x1F], yellow:[0xFE,0xD8,0x3D],
+  light_blue:[0x3A,0xB3,0xDA], magenta:[0xC7,0x4E,0xBD], orange:[0xF9,0x80,0x1D], white:[0xF9,0xFF,0xFE]
 };
 const DYE_NAMES = Object.keys(DYES);
 const BASE = [255,255,255]; // canvas base = white
